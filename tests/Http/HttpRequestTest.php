@@ -2051,6 +2051,24 @@ class HttpRequestTest extends TestCase
         $this->assertContains('_old_input', $session->get('_flash.new', []));
     }
 
+    public function testHttpRequestFlashOnlyAndFlashExceptDoNotFlashUploadedFiles()
+    {
+        $files = [
+            'avatar' => UploadedFile::fake()->image('avatar.jpg'),
+            'documents' => [UploadedFile::fake()->create('a.pdf')],
+        ];
+
+        $session = new Store('test', new NullSessionHandler);
+        $request = Request::create('/', 'POST', ['name' => 'Taylor', 'password' => 'secret'], [], $files);
+        $request->setLaravelSession($session);
+
+        $request->flashOnly(['name', 'avatar', 'documents']);
+        $this->assertSame(['name' => 'Taylor', 'documents' => []], $session->getOldInput());
+
+        $request->flashExcept(['password']);
+        $this->assertSame(['name' => 'Taylor', 'documents' => []], $session->getOldInput());
+    }
+
     public function testGeneratingJsonRequestFromParentRequestUsesCorrectType()
     {
         if (! method_exists(SymfonyRequest::class, 'getPayload')) {
